@@ -1,0 +1,17 @@
+#cPlayControlRack{
+height:28px;
+}
+#cPlayControlRack li{
+	width:29px;
+	height:28px;
+	background-image:url(i/playersprite.png);
+	background-repeat:no-repeat;
+	float:left;
+}
+.cplaybutton{background-position:0 1px;}
+.CpauseButton{background-position:-54px 1px;}
+.CplaySkipBack{background-position:-216px 1px;}
+.CplaySkipForward{background-position:-161px 1px;}
+.CplayVolumeIcon{background-position:-378px 1px;}
+.CplayVolumeSlide{background-position:-150px 1px;}
+.CplayHidden{display:none;}
