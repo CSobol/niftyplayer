@@ -1,0 +1,250 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8" />
+	<title>The Hedgehog's Delima | Indie Rock from Cleveland, Ohio</title>
+	<link rel="stylesheet" href="http://yui.yahooapis.com/2.9.0/build/reset/reset-min.css"/>
+	<link rel="stylesheet" href="css/style.css"/>
+	<link rel="stylesheet" href="css/dot-luv/jquery-ui-1.8.18.custom.css"/>
+	<link rel="stylesheet" href="css/cplay/cplayer.css">
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
+	<script>
+	function audioControl(playerId, settings){
+		var self = this;
+		var audioTagSupport = !!(document.createElement('audio').canPlayType), mp3Support = !!document.createElement('audio').canPlayType('audio/mpeg'), currentTrack, displayControls, playerSettings = {}, nowPlaying = 0;
+		//must check if it's array first because typeof==object will return true
+		//JavaScript arrays are technically objects
+		isArray = function(a){
+					return Object.prototype.toString.apply(a) === '[object Array]';
+		}
+		if(isArray(settings)){
+			//user passed in a tracklist
+			var options ={
+					visible: true,
+					autoplay: false,
+					controls: true,
+					playlist: !!settings.playlist ? settings.playlist: [],
+					trackDetailsStyle:'marquee',
+					showFullPlaylist: 'true'
+				}
+		}else if(typeof settings == 'object'){
+			//user passed in settings
+			var options ={
+					visible: !!settings.visible ? settings.visible : true,
+					autoplay: !!settings.autoplay ? settings.autoplay : false,
+					controls: !!settings.controls ? settings.controls : true,
+					playlist:!!settings.playlist ? settings.playlist: [],
+					trackDetailsStyle: !!settings.trackDetailsStyle ? settings.trackDetailsStyle : 'marquee',
+					showFullPlaylist: !!settings.showFullPlaylist ? settings.showFullPlaylist  : true,
+					autoplay: !!settings.autolay ? settings.autoplay : false
+				}
+		}else{
+			//use defaults
+			var options ={
+					visible: true,
+					autoplay: false,
+					controls: true,
+					playlist: [],
+					trackDetailsStyle:'marquee',
+					showFullPlaylist: 'true'
+				}
+		}
+		playerSettings.autoPlay = false;
+		this.cplayer = {};
+		this.playIt = function(){
+			self.cplayer.play()
+		};
+		var findAudioElement = function(obj){
+			if(typeof obj == 'object' && playerId.nodeName === 'AUDIO'){
+				self.cplayer=obj;
+				console.log('audio element');
+				self.cplayer.setAttribute('src', options.playlist[nowPlaying].mp3)
+				return !!self.cplayer;
+			}else if(typeof obj == 'object' && playerId.nodeName != 'AUDIO'){
+				if(audioTagSupport){
+					self.cplayer = createHTML5Audio(obj);
+					console.log('not audio element');
+				}
+				//createAudioElement(parent);
+			}else if(typeof obj == 'string'){
+				console.log('string')
+				findAudioElement(document.getElementById(playerId));
+			};
+		}
+		var createHTML5Audio = function(parent){
+			console.log('create HTML5');
+			var playButton, pauseButton, skipForward, skipBack, volumeSlide, trackDetails, trackList;
+			var cplayer=document.createElement('audio');
+			cplayer.setAttribute('controls', 'true');
+			if(options.playlist.length>0){
+				cplayerSrc=document.createElement('source');
+				cplayerSrc.setAttribute('src', options.playlist[nowPlaying].mp3);
+				cplayer.appendChild(cplayerSrc);
+				cplayer.setAttribute('src', options.playlist[nowPlaying].mp3)
+			}
+			parent.appendChild(cplayer);
+			if(options.controls){
+				var controls = createControls();
+				parent.insertBefore(controls, cplayer.nextSibling);
+			}
+			return cplayer;
+		}
+		var createControls = function(){
+		        console.log('creating controls');
+				var controlRack, playerControls=[];
+				//create HTML elements for audio control
+				controlRack=document.createElement('ul');
+				controlRack.setAttribute('id', 'cPlayControlRack')
+				playerControls[0] = document.createElement('li'); //play button
+				playerControls[0].className += 'cplaybutton';
+				playerControls[0].addEventListener('click', function(){self.playIt();}, true);
+				playerControls[1] = document.createElement('li'); //pause button
+				playerControls[1].className += 'CpauseButton CplayHidden';
+				playerControls[1].addEventListener('click', function(){self.pauseIt();}, true);
+				if(playerSettings.autoPlay){
+					console.log('has autoplay');
+					playerControls[0].className += ' CplayHidden'; //hide play button
+					playerControls[1].className.replace( /(?:^|\s)CplayHidden(?!\S)/ , '' ); //unhide pause button
+				}
+				playerControls[2] = document.createElement('li'); //skip track back
+				playerControls[2].className +=  'CplaySkipBack';
+				playerControls[2].addEventListener('click', function(){self.skipBCK();}, true);
+				playerControls[3] = document.createElement('li'); //skip track forward
+				playerControls[3].className += 'CplaySkipForward';
+				playerControls[3].addEventListener('click', function(){self.skipFWD();}, true);
+				playerControls[4] = document.createElement('li'); //volume icon
+				playerControls[4].className += 'CplayVolumeIcon';
+				playerControls[4].addEventListener('click', function(){self.toggleMute();}, true);
+				playerControls[5] = document.createElement('li'); //volume slider
+				playerControls[5].className += 'CplayVolumeSlide';
+				for(i=0; i<playerControls.length; i++){
+					controlRack.appendChild(playerControls[i]);
+				};
+				
+				return controlRack;
+		};
+		this.findCurrentTrack = function(){
+			console.log('findCurent Track' + options.playlist[nowPlaying]);
+			return options.playlist[nowPlaying];
+		};
+		this.trackDuration = function(){
+			return self.cplayer.duration;
+		};
+		//get this party started
+		findAudioElement(playerId);		
+		console.log(this.cplayer)
+	}
+	audioControl.prototype.play = function(/*playerObj,*/ callback){
+			this.cplayer.play();
+			if(typeof callback =='function'){
+				callback();
+			};
+	}
+	audioControl.prototype.pause = function(playerObj, callback){
+			document.getElementById(playerObj).pause();
+			if(typeof callback =='function'){
+				callback();
+			};
+	}
+	audioControl.prototype.volumeUp = function(playerObj, volumeLevel, callback){
+			document.getElementById(playerObj).volume+=0.1;
+			if(typeof callback =='function'){
+				callback();
+			}else{
+				return document.getElementById(playerObj).volume;
+			}
+	
+	}
+	audioControl.prototype.volumeDown = function(playerObj, callback){
+			document.getElementById(playerObj).volume-=0.1;
+			if(typeof callback =='function'){
+				callback();
+			}else{
+				return document.getElementById(playerObj).volume;
+			}
+	
+	}
+	audioControl.prototype.setVolume = function(volumeLevel, callback){
+			document.getElementById(playerObj).volume=volumeLevel;
+			if(typeof callback =='function'){
+				callback();
+			}else{
+				return document.getElementById(playerObj).volume;
+			}
+	}
+	audioControl.prototype.currentTrack = function(callback){
+			return this.findCurrentTrack();
+	}
+	audioControl.prototype.getTrackDuration = function(){
+			duration = this.trackDuration();
+			if(isNaN(duration)){
+				return false;
+			}else if(duration < 1){
+				return 1;
+			}else{
+				return Math.round(this.trackDuration());
+			}
+	}
+	//audioControl.prototype.
+	$(document).ready(function(){
+	var options ={
+		controls: true,
+		playlist: [
+				{
+				ogg: '',
+				mp3: 'creeeeak.mp3',
+				title:'creaeak i guess',
+				artist:'a door?',
+				album:''
+				},
+				{
+				ogg: '',
+				mp3: 'betty.mp3',
+				title: 'Betty\'s Bitter Butter',
+				album: 'Mother Goose'
+				}
+			]
+		}
+	audioElement = document.getElementById('player');
+	audioElement2 = document.getElementById('player2');
+	audioElement3 = 'player3';
+	player = new audioControl(audioElement, options);
+	player2= new audioControl(audioElement2, options);
+	player3= new audioControl(audioElement3);
+		$('#playButton').bind('click',function(){
+			player.play('player');
+			$(this).hide();
+			$('#pauseButton').show();
+			return false;
+		})
+		$('#play2').bind('click', function(){
+			player2.play();
+		})
+		console.log(player.currentTrack())
+		console.log(player.cplayer.readyState)
+		setTimeout(function(){
+		if(player.cplayer.readyState > 2){
+			console.log(player.cplayer.readyState)
+			console.log(player.getTrackDuration());
+		}else{
+			console.log('player not ready')
+			console.log(player.cplayer.readyState);
+		}
+		}, 1000);
+		
+		console.log(player.getTrackDuration());
+	})
+	</script>
+</head>
+<body>
+	<audio src="betty.mp3" id="player" controls>
+	Hello
+	</audio>
+	<a href="#" id="playButton">play!</a>
+	<a href="#" id="pauseButton" style="display:none;">pause</a>
+	<div id="player2">
+	</div>
+	<div id="player3"></div>
+	<div id="play2">play 2!</div>
+</body>
+</html>
