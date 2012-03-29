@@ -58,15 +58,15 @@
 			self.cplayer.play()
 		};
 		var getHoursMinutesSecondsFromSeconds = function(seconds){
-			var time;
-		    var hours = Math.floor(seconds / (60*60));
+			var time = '';
+                        var hours = Math.floor(seconds / (60*60));
 			var minutes = Math.floor(seconds / 60);
 			var divider = ':';
-			var seconds = (Math.floor(self.cplayer.currentTime%60));
-			seconds = seconds + '';
-			if(seconds.length < 1){
-				seconds ='0' + seconds
-			}
+			if(hours > 0){
+                            minutes =  String((minutes < 10 ? '0' : '') + minutes);
+                        }
+                        var seconds = (Math.floor(self.cplayer.currentTime%60));
+			seconds =  String((seconds < 10 ? '0' : '') + seconds);
 			if(hours>=1){
 				time += hours + divider;
 			}
