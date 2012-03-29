@@ -23,10 +23,11 @@
 					visible: true,
 					autoplay: false,
 					controls: true,
-					playlist: !!settings.playlist ? settings.playlist: [],
+					playlist: settings,
 					trackDetailsStyle:'marquee',
-					showFullPlaylist: 'true'
-				}
+					showFullPlaylist: true,
+					showDetails: true
+				};
 		}else if(typeof settings == 'object'){
 			//user passed in settings
 			var options ={
@@ -34,10 +35,11 @@
 					autoplay: !!settings.autoplay ? settings.autoplay : false,
 					controls: !!settings.controls ? settings.controls : true,
 					playlist:!!settings.playlist ? settings.playlist: [],
+					showDetails: !! settings.showDetails ? settings.showDetails : true,
 					trackDetailsStyle: !!settings.trackDetailsStyle ? settings.trackDetailsStyle : 'marquee',
 					showFullPlaylist: !!settings.showFullPlaylist ? settings.showFullPlaylist  : true,
 					autoplay: !!settings.autolay ? settings.autoplay : false
-				}
+				};
 		}else{
 			//use defaults
 			var options ={
@@ -46,19 +48,48 @@
 					controls: true,
 					playlist: [],
 					trackDetailsStyle:'marquee',
-					showFullPlaylist: 'true'
-				}
+					showFullPlaylist: true,
+					showDetails: true
+				};
 		}
 		playerSettings.autoPlay = false;
 		this.cplayer = {};
 		this.playIt = function(){
 			self.cplayer.play()
 		};
+		var getHoursMinutesSecondsFromSeconds = function(seconds){
+			var time;
+		    var hours = Math.floor(seconds / (60*60));
+			var minutes = Math.floor(seconds / 60);
+			var divider = ':';
+			var seconds = (Math.floor(self.cplayer.currentTime%60));
+			seconds = seconds + '';
+			if(seconds.length < 1){
+				seconds ='0' + seconds
+			}
+			if(hours>=1){
+				time += hours + divider;
+			}
+			time += minutes + divider + seconds;
+			return time;
+		}
 		var findAudioElement = function(obj){
 			if(typeof obj == 'object' && playerId.nodeName === 'AUDIO'){
 				self.cplayer=obj;
+				var parent=self.cplayer.parentNode;
+				self.cplayer.onreadystatechange = function(){
+				console.log('ready state handler');
+				console.log(self)}
 				console.log('audio element');
-				self.cplayer.setAttribute('src', options.playlist[nowPlaying].mp3)
+				self.cplayer.setAttribute('src', options.playlist[nowPlaying].mp3);
+				if(options.controls){
+					var controls = createControls();
+					parent.insertBefore(controls, self.cplayer.nextSibling);
+				}
+				if(options.visible){
+					var gui = createPlayerGUI();
+					parent.insertBefore(gui, self.cplayer.nextSibling);
+				}
 				return !!self.cplayer;
 			}else if(typeof obj == 'object' && playerId.nodeName != 'AUDIO'){
 				if(audioTagSupport){
@@ -89,12 +120,41 @@
 			}
 			return cplayer;
 		}
+		var createPlayerGUI = function(){
+			console.log('creating GUI');
+			debugger;
+			console.log(self.cplayer);
+			var playerBox, trackElement, timeKeeper, shareCenter, trackTitle = options.playlist[nowPlaying].title ? options.playlist[nowPlaying].title : false, trackAlbum = options.playlist[nowPlaying].album ? options.playlist[nowPlaying].album : false, trackDuraion, title1, title2;
+			playerBox = document.createElement('div');
+			playerBox.className += ' playerMain';
+			if(options.showDetails){
+				trackElement = document.createElement('div');
+				trackSpan = document.createElement('span');
+				trackSpan.appendChild(document.createTextNode((trackTitle ? trackTitle : 'Track #' + (nowPlaying+1)) + (trackAlbum ? ' - ' + trackAlbum : '')));
+				trackElement.appendChild(trackSpan);
+				trackElement.className += 'trackInfoHolder';
+				timeKeeper = document.createElement('div');
+				timeKeeper.className += 'timeKeeper';
+				time=self.getTrackDuration();
+				if(time){
+					timeKeeper.appendChild(document.createTextNode(time))
+				}else{
+					timeKeeper.appendChild(document.createTextNode('0:00'));
+				}
+				self.cplayer.addEventListener('timeupdate', function(){timeKeeper.innerHTML = (getHoursMinutesSecondsFromSeconds(Math.floor(self.cplayer.currentTime)))})
+				trackElement.appendChild(timeKeeper);
+				playerBox.appendChild(trackElement);
+				
+			}
+			return playerBox;
+			
+		}
 		var createControls = function(){
 		        console.log('creating controls');
 				var controlRack, playerControls=[];
 				//create HTML elements for audio control
 				controlRack=document.createElement('ul');
-				controlRack.setAttribute('id', 'cPlayControlRack')
+				controlRack.className += ' cPlayControlRack';
 				playerControls[0] = document.createElement('li'); //play button
 				playerControls[0].className += 'cplaybutton';
 				playerControls[0].addEventListener('click', function(){self.playIt();}, true);
@@ -132,7 +192,8 @@
 		};
 		//get this party started
 		findAudioElement(playerId);		
-		console.log(this.cplayer)
+		console.log(this.cplayer);
+		this.cplayer.addEventListener('timeupdate', function(){console.log('ontimeupdate');}, true)
 	}
 	audioControl.prototype.play = function(/*playerObj,*/ callback){
 			this.cplayer.play();
@@ -175,14 +236,18 @@
 	audioControl.prototype.currentTrack = function(callback){
 			return this.findCurrentTrack();
 	}
-	audioControl.prototype.getTrackDuration = function(){
+	audioControl.prototype.getTrackDuration = function(precise){
 			duration = this.trackDuration();
 			if(isNaN(duration)){
 				return false;
 			}else if(duration < 1){
 				return 1;
 			}else{
-				return Math.round(this.trackDuration());
+				if(!precise){
+					return Math.round(this.trackDuration());
+				}else{
+					return this.trackDuration();
+				}
 			}
 	}
 	//audioControl.prototype.
@@ -192,18 +257,22 @@
 		playlist: [
 				{
 				ogg: '',
+				mp3: 'betty.mp3',
+				title: 'Betty\'s Bitter Butter',
+				album: 'Mother Goose'
+				},
+				{
+				ogg: '',
 				mp3: 'creeeeak.mp3',
 				title:'creaeak i guess',
 				artist:'a door?',
 				album:''
-				},
-				{
-				ogg: '',
-				mp3: 'betty.mp3',
-				title: 'Betty\'s Bitter Butter',
-				album: 'Mother Goose'
 				}
-			]
+			],
+		branding: 
+				{
+				title1: 'The HedgeHog\'s Delima',
+				}
 		}
 	audioElement = document.getElementById('player');
 	audioElement2 = document.getElementById('player2');
@@ -237,7 +306,7 @@
 	</script>
 </head>
 <body>
-	<audio src="betty.mp3" id="player" controls>
+	<audio src="betty.mp3" id="player" controls onreadystatechange="console.log('onreadystatechange');">
 	Hello
 	</audio>
 	<a href="#" id="playButton">play!</a>
